@@ -67,7 +67,8 @@ if __name__ == "__main__":
 
     plt.figure(figsize=(20, 8), dpi=80)
     for rain in rains:
-        if len(rain)>0:
+        if len(rain) > 0:
             plot_rain(rain)
 
     plt.show()
+
