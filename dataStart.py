@@ -8,36 +8,66 @@ import codecs
 import matplotlib.pyplot as plt
 from datetime import *
 
-df = pd.read_csv("data/2019.csv")
-df["DDATETIME"] = pd.to_datetime(df["DDATETIME"],format="")
-df.set_index("DDATETIME", inplace=True)
 
-df.rename(columns={"Unnamed: 0" : "id"}, inplace=True)
-print(df.head())
-print(df.info())
-for i in df.columns:
-    print(i)
-df_rain = df.loc[(df["1小时降水量"].astype(float) != 0)
-                 & (df["过去3小时降水量"].astype(float) != 0)
-                 & (df["过去6小时降水量"].astype(float) != 0)
-                 & (df["过去12小时降水量"].astype(float) != 0)
-                 & (df["过去24小时降水量"].astype(float) != 0)]
+def getpos(alist):
+    re = []
+    temp = [-1, -1]
+    for i in range(len(alist)):
 
-sumrain = df.resample('M').sum()
-print(sumrain)
+        if i != len(alist) - 1:
+            if (alist[i] + 1 == alist[i + 1]) & (temp[0] == -1):
+                temp[0] = i
+            if alist[i] + 1 != alist[i + 1]:
+                temp[1] = i
+                re.append(temp)
+                temp = [-1, -1]
+        else:
+            if temp[0] == -1:
+                temp[0] = len(alist) - 1
+            temp[1] = len(alist) - 1
+            re.append(temp)
+    for pos in re:
+        if pos[0] == -1:
+            pos[0] = pos[1]
+    return re
 
-_x = range(len(df_rain.index))
-_y = df_rain["过去24小时降水量"].astype(float)
+
+def plot_rain(df_rain):
+    _x = range(len(df_rain.index))
+    _y = df_rain.values
+
+    l = [i.strftime("%m%d%H") for i in df_rain.index]
 
 
-l = [i.strftime("%m%d%H") for i in df_rain.index]
-ll = []
-for i in range(len(l))[::50]:
-    ll.append(l[i])
-print(l)
-print(ll)
-plt.figure(figsize=(20, 8), dpi=80)
-plt.xticks(_x[::50], ll, rotation=45)
-plt.yticks(range(int(max(_y))))
-plt.plot(_x, _y)
-plt.show()
+    # plt.xticks(_x[::5], list(l)[::5], rotation=45)
+    # plt.yticks(range(1, int(max(_y)) + 1, 5))
+    plt.scatter(_x, _y)
+
+
+if __name__ == "__main__":
+    df = pd.read_csv("data/2019.csv")
+    df["DDATETIME"] = pd.to_datetime(df["DDATETIME"], format="")
+    df.set_index("DDATETIME", inplace=True)
+
+    df.rename(columns={"Unnamed: 0": "id"}, inplace=True)
+
+    df["id"] = range(1, len(df["id"]) + 1, 1)
+
+    df_rain = df.loc[(df["1小时降水量"].astype(float) > 1)]
+
+    testre = getpos(list(df_rain["id"]))
+    print(len(testre))
+    df_rain = df_rain["1小时降水量"]
+
+    rains = []
+    for pos in testre:
+        if pos[0] == -1:
+            rains.append(df_rain[pos[1]:pos[1] + 1])
+        rains.append(df_rain[pos[0]:pos[1] + 1])
+
+    plt.figure(figsize=(20, 8), dpi=80)
+    for rain in rains:
+        if len(rain)>0:
+            plot_rain(rain)
+
+    plt.show()
